@@ -262,17 +262,7 @@ func (c *TCPClient) Write(b []byte) (int, error) {
 			if err == nil {
 				return n, err
 			}
-			switch e := err.(type) {
-			case *net.OpError:
-				if e.Err.(syscall.Errno) == syscall.ECONNRESET ||
-					e.Err.(syscall.Errno) == syscall.EPIPE {
-					atomic.StoreInt32(&c.status, statusOffline)
-				} else {
-					return n, err
-				}
-			default:
-				return n, err
-			}
+			atomic.StoreInt32(&c.status, statusOffline)
 		} else if atomic.LoadInt32(&c.status) == statusOffline {
 			if err := c.reconnect(); err != nil {
 				return -1, err

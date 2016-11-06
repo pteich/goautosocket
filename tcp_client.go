@@ -152,7 +152,6 @@ func (c *TCPClient) reconnect() error {
 		// reset shared status to offline
 		defer atomic.StoreInt32(&c.status, statusOffline)
 		return err
-		}
 	}
 
 	// set new TCP socket

@@ -151,14 +151,7 @@ func (c *TCPClient) reconnect() error {
 	if err != nil {
 		// reset shared status to offline
 		defer atomic.StoreInt32(&c.status, statusOffline)
-		switch e := err.(type) {
-		case *net.OpError:
-			if e.Err.(syscall.Errno) == syscall.ECONNREFUSED {
-				return nil
-			}
-			return err
-		default:
-			return err
+		return err
 		}
 	}
 

@@ -13,6 +13,7 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+	"os"
 )
 
 // ----------------------------------------------------------------------------
@@ -180,11 +181,15 @@ func (c *TCPClient) Read(b []byte) (int, error) {
 			if err == nil {
 				return n, err
 			}
-			switch e := err.(type) {
+			switch err.(type) {
 			case *net.OpError:
-				if e.Err.(syscall.Errno) == syscall.ECONNRESET ||
-					e.Err.(syscall.Errno) == syscall.EPIPE {
-					atomic.StoreInt32(&c.status, statusOffline)
+				opErr := err.(*net.OpError)
+				if sysErr, ok := opErr.Err.(*os.SyscallError); ok {
+					if errno, ok := sysErr.Err.(syscall.Errno); ok {
+						if errno == syscall.ECONNRESET || errno == syscall.EPIPE {
+							atomic.StoreInt32(&c.status, statusOffline)
+						}
+					}
 				} else {
 					return n, err
 				}

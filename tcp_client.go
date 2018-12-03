@@ -50,6 +50,8 @@ type TCPClient struct {
 // The new client connects to the remote address `raddr` on the network `network`,
 // which must be "tcp", "tcp4", or "tcp6".
 //
+// A default timeout of 15 seconds is used
+//
 // This complements net package's Dial function.
 func Dial(network, addr string) (net.Conn, error) {
 	raddr, err := net.ResolveTCPAddr(network, addr)
@@ -57,7 +59,7 @@ func Dial(network, addr string) (net.Conn, error) {
 		return nil, err
 	}
 
-	return DialTCP(network, nil, raddr)
+	return DialTCPWithTimeout(network, nil, raddr, 15*time.Second)
 }
 
 // DialTCP returns a new *TCPClient.
@@ -75,6 +77,35 @@ func DialTCP(network string, laddr, raddr *net.TCPAddr) (*TCPClient, error) {
 
 	return &TCPClient{
 		TCPConn: conn,
+
+		lock:   sync.RWMutex{},
+		status: 0,
+
+		maxRetries:    10,
+		retryInterval: 10 * time.Millisecond,
+	}, nil
+}
+
+// DialTCPWithTimeout returns a new *TCPClient.
+//
+// The new client connects to the remote address `raddr` on the network `network`,
+// which must be "tcp", "tcp4", or "tcp6".
+// If `laddr` is not nil, it is used as the local address for the connection.
+//
+// A timeout is specified after which the client gives up trying to connect
+func DialTCPWithTimeout(network string, laddr, raddr *net.TCPAddr, timeout time.Duration) (*TCPClient, error) {
+
+	d := net.Dialer{
+		Timeout: timeout,
+		LocalAddr: laddr,
+	}
+	conn, err := d.Dial(network, raddr.String())
+	if err != nil {
+		return nil, err
+	}
+
+	return &TCPClient{
+		TCPConn: conn.(*net.TCPConn),
 
 		lock:   sync.RWMutex{},
 		status: 0,

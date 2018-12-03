@@ -11,6 +11,7 @@ import (
 	"net"
 	"os"
 	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -68,6 +69,19 @@ func TestTCPClient_DialTCP(t *testing.T) {
 	}
 }
 
+func TestTCPClient_DialTCPWithTimeout(t *testing.T) {
+	c, err := DialTCPWithTimeout("tcp", nil, server.Addr().(*net.TCPAddr), 2*time.Second)
+	if err != nil {
+		t.Error(err)
+	}
+	if c == nil || c.TCPConn == nil {
+		t.Fatal("initialization failed")
+	}
+	if err := c.Close(); err != nil {
+		t.Error(err)
+	}
+}
+
 // ----------------------------------------------------------------------------
 
 func TestTCPClient_reconnect(t *testing.T) {
@@ -86,7 +100,7 @@ func TestTCPClient_reconnect(t *testing.T) {
 
 	if err := tcpConn1.Close(); err == nil {
 		t.Error("tcpConn1 should already be closed")
-	} else if err.Error() != "use of closed network connection" {
+	} else if !strings.Contains(err.Error(), "use of closed network connection") {
 		t.Error(err)
 	}
 	if err := tcpConn2.Close(); err != nil {
@@ -109,7 +123,7 @@ func TestTCPClient_Write(t *testing.T) {
 	// save the original port
 	addr := s.Addr()
 
-	nbClients := 100
+	nbClients := 40
 	// connect nbClients clients to the server
 	clients := make([]net.Conn, nbClients)
 	for i := 0; i < len(clients); i++ {

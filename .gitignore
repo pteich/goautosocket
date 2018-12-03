@@ -31,3 +31,5 @@ _testmain.go
 
 app.conf.json
 docker.conf.json
+
+.idea
